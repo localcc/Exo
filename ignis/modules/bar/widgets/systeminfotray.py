@@ -1,12 +1,16 @@
 import asyncio
-from ignis import widgets
-from ignis.services.system_tray import SystemTrayService, SystemTrayItem
-from ignis.services.network import NetworkService
-from ignis.services.bluetooth import BluetoothService
-from ignis.services.audio import AudioService
-from ignis.window_manager import WindowManager
+
 from gi.repository import Gtk
+from ignis.services.audio import AudioService
+from ignis.services.bluetooth import BluetoothService
+from ignis.services.network import NetworkService
+from ignis.services.niri import NiriService
+from ignis.services.system_tray import SystemTrayItem, SystemTrayService
+from ignis.window_manager import WindowManager
 from user_settings import user_settings
+
+from ignis import widgets
+
 from .battery import Battery
 
 window_manager = WindowManager.get_default()
@@ -110,6 +114,7 @@ class SystemInfoTray:
         self.tray_widget = Tray()
         self.battery_widget = Battery()
 
+        self.niri_service = NiriService.get_default()
         self.network_service = NetworkService.get_default()
         self.bluetooth_service = BluetoothService.get_default()
         self.audio_service = AudioService.get_default()
@@ -142,10 +147,19 @@ class SystemInfoTray:
         self.main_container.append(self.tray_widget.widget())
         self.main_container.append(self.button)
 
+        self.keyboard_layout = widgets.Label(
+            label=None, css_classes=["title"], justify="center"
+        )
+
         button_content.append(self.wifi)
         button_content.append(self.bluetooth)
         button_content.append(self.audio_container)
         button_content.append(self.battery_widget.widget())
+        button_content.append(self.keyboard_layout)
+
+        self.niri_service.keyboard_layouts.connect(
+            "notify::current-name", self._update_ui
+        )
 
         self.network_service.wifi.connect("notify::is-connected", self._update_ui)
         self.network_service.ethernet.connect("notify::is-connected", self._update_ui)
@@ -254,6 +268,11 @@ class SystemInfoTray:
                 self.audio.set_label("volume_down")
             else:
                 self.audio.set_label("volume_up")
+
+        mapping = {"English (US)": "US", "Russian": "RU"}
+        self.keyboard_layout.set_label(
+            mapping[self.niri_service.keyboard_layouts.current_name]
+        )
 
     def widget(self):
         return self.main_container

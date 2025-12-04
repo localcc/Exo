@@ -443,6 +443,12 @@
 
 .system-info-tray {
     padding: 0px 10px;
+
+    .title {
+        font-weight: 500;
+        margin-bottom: -3px;
+    }
+
     .system-info-tray-container {
         padding: 0px;
         .icon {
